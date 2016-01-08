@@ -1,22 +1,30 @@
 package utf8
 
 import (
+	"io"
 	"strings"
 	"testing"
 )
 
 func TestRead(t *testing.T) {
-	tests := []rune{
-		'本', // 0x672c
+	tests := []string{
+		"本",
+		"Hello, 世界",
 	}
-	for _, testValue := range tests {
-		r := strings.NewReader(string(testValue))
-		cp, err := ReadCodePoint(r)
-		if err != nil {
-			t.Error("unexpected error: ", err)
+	for _, test := range tests {
+		s := ""
+		r := strings.NewReader(test)
+		for {
+			cp, err := ReadCodePoint(r)
+			if err == io.EOF {
+				break
+			} else if err != nil {
+				t.Error("unexpected error: ", err)
+			}
+			s = s + string(rune(cp))
 		}
-		if cp != uint32(testValue) {
-			t.Errorf("expected 0x%x, got 0x%x", testValue, cp)
+		if s != test {
+			t.Error("")
 		}
 	}
 }
