@@ -12,6 +12,12 @@ import (
 // https://en.wikipedia.org/wiki/UTF-8#Description
 const MaxBytes = 4
 
+// Reads the next Unicode code point from a reader.
+// 
+// Skips to the next leading byte if the first byte isn't a leading byte.
+// If a continuation byte is invalid then error will be non-nil and the
+// returned code point should be ignored. All other types of errors
+// produce a non-nil error value.
 func ReadCodePoint(r io.Reader) (uint32, error) {
 	contLen := 0
 	var offset uint32 = 0
