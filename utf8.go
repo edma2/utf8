@@ -52,8 +52,10 @@ func ReadCodePoint(r io.Reader) (uint32, error) {
 		return 0, fmt.Errorf("unexpected number of bytes read: %d", n)
 	}
 	for _, byte := range contBytes {
-		// skip validation of continuation bytes
-		contValue := (byte & 0x3F) // 10xxxxxx
+		if (byte & 0xC0) ^ 0x80 != 0 { // 10xxxxxx
+			return 0, fmt.Errorf("unexpected continuation byte: 0x%x\n", byte)
+		}
+		contValue := (byte & 0x3F)
 		offset = offset - 6
 		cp = cp | (uint32(contValue) << offset)
 	}
