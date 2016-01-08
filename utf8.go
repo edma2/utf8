@@ -12,7 +12,7 @@ import (
 // https://en.wikipedia.org/wiki/UTF-8#Description
 const MaxBytes = 4
 
-func ReadFrom(r io.Reader) (rune, error) {
+func ReadCodePoint(r io.Reader) (uint32, error) {
 	b := make([]byte, MaxBytes)
 	n, err := r.Read(b[0:1])
 	if err != nil {
@@ -23,22 +23,22 @@ func ReadFrom(r io.Reader) (rune, error) {
 	}
 	contLen := 0
 	var offset uint32 = 0
-	var runeValue uint32 = 0
+	var cp uint32 = 0
 
 	if b[0]&(1<<7) == 0 { // 0xxxxxxx
-		return rune(b[0]), nil
+		return uint32(b[0]), nil
 	} else if (b[0]&0xE0)^0xC0 == 0 { // 110xxxxx
 		contLen = 1
 		offset = uint32(contLen * 6)
-		runeValue = (0x1F & uint32(b[0])) << offset
+		cp = (0x1F & uint32(b[0])) << offset
 	} else if (b[0]&0xF0)^0xE0 == 0 { // 1110xxxx
 		contLen = 2
 		offset = uint32(contLen * 6)
-		runeValue = (0xF & uint32(b[0])) << offset
+		cp = (0xF & uint32(b[0])) << offset
 	} else if (b[0]&0xF8)^0xF0 == 0 { // 11110xxx
 		contLen = 3
 		offset = uint32(contLen * 6)
-		runeValue = (0x7 & uint32(b[0])) << offset
+		cp = (0x7 & uint32(b[0])) << offset
 	} else {
 		return 0, fmt.Errorf("unexpected leading byte: 0x%x\n", b[0])
 	}
@@ -55,8 +55,8 @@ func ReadFrom(r io.Reader) (rune, error) {
 		// skip validation of continuation bytes
 		contValue := (byte & 0x3F) // 10xxxxxx
 		offset = offset - 6
-		runeValue = runeValue | (uint32(contValue) << offset)
+		cp = cp | (uint32(contValue) << offset)
 	}
 
-	return rune(runeValue), nil
+	return cp, nil
 }

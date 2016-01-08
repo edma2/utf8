@@ -11,12 +11,12 @@ func TestRead(t *testing.T) {
 	}
 	for _, testValue := range tests {
 		r := strings.NewReader(string(testValue))
-		runeValue, err := ReadFrom(r)
+		cp, err := ReadCodePoint(r)
 		if err != nil {
 			t.Error("unexpected error: ", err)
 		}
-		if runeValue != testValue {
-			t.Errorf("expected 0x%x, got 0x%x", testValue, runeValue)
+		if cp != uint32(testValue) {
+			t.Errorf("expected 0x%x, got 0x%x", testValue, cp)
 		}
 	}
 }
