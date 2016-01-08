@@ -13,38 +13,43 @@ import (
 const MaxBytes = 4
 
 func ReadCodePoint(r io.Reader) (uint32, error) {
-	b := make([]byte, MaxBytes)
-	n, err := r.Read(b[0:1])
-	if err != nil {
-		return 0, err
-	}
-	if n != 1 {
-		return 0, fmt.Errorf("unexpected number of bytes read: %d", n)
-	}
 	contLen := 0
 	var offset uint32 = 0
 	var cp uint32 = 0
+	b := make([]byte, MaxBytes)
 
-	if b[0]&(1<<7) == 0 { // 0xxxxxxx
-		return uint32(b[0]), nil
-	} else if (b[0]&0xE0)^0xC0 == 0 { // 110xxxxx
-		contLen = 1
-		offset = uint32(contLen * 6)
-		cp = (0x1F & uint32(b[0])) << offset
-	} else if (b[0]&0xF0)^0xE0 == 0 { // 1110xxxx
-		contLen = 2
-		offset = uint32(contLen * 6)
-		cp = (0xF & uint32(b[0])) << offset
-	} else if (b[0]&0xF8)^0xF0 == 0 { // 11110xxx
-		contLen = 3
-		offset = uint32(contLen * 6)
-		cp = (0x7 & uint32(b[0])) << offset
-	} else {
-		return 0, fmt.Errorf("unexpected leading byte: 0x%x\n", b[0])
+	for {
+		n, err := r.Read(b[0:1])
+		if err != nil {
+			return 0, err
+		}
+		if n != 1 {
+			return 0, fmt.Errorf("unexpected number of bytes read: %d", n)
+		}
+
+		if b[0]&(1<<7) == 0 { // 0xxxxxxx
+			return uint32(b[0]), nil
+		} else if (b[0]&0xE0)^0xC0 == 0 { // 110xxxxx
+			contLen = 1
+			offset = uint32(contLen * 6)
+			cp = (0x1F & uint32(b[0])) << offset
+			break
+		} else if (b[0]&0xF0)^0xE0 == 0 { // 1110xxxx
+			contLen = 2
+			offset = uint32(contLen * 6)
+			cp = (0xF & uint32(b[0])) << offset
+			break
+		} else if (b[0]&0xF8)^0xF0 == 0 { // 11110xxx
+			contLen = 3
+			offset = uint32(contLen * 6)
+			cp = (0x7 & uint32(b[0])) << offset
+			break
+		}
+		// else self-synchronize: read the next byte until we find a valid leading byte.
 	}
 
 	contBytes := b[1 : 1+contLen]
-	n, err = r.Read(contBytes)
+	n, err := r.Read(contBytes)
 	if err != nil {
 		return 0, err
 	}
