@@ -53,7 +53,7 @@ func ReadFrom(r io.Reader) (rune, error) {
 	}
 	for _, byte := range contBytes {
 		// skip validation of continuation bytes
-		contValue := (byte & 0x3F) << 2 // 10xxxxxx => xxxxxx00
+		contValue := (byte & 0x3F) // 10xxxxxx
 		offset = offset - 6
 		runeValue = runeValue | (uint32(contValue) << offset)
 	}
